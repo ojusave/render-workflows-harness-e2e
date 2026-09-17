@@ -11,6 +11,7 @@ import asyncio
 import json
 import os
 import socket
+import uuid
 
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.messages import ModelMessage, ModelResponse, TextPart, ToolCallPart, ToolReturnPart, UserPromptPart
@@ -21,6 +22,9 @@ from render import Options, Retry, TaskContext, Workflows
 from typing_extensions import TypedDict
 
 from pydantic_ai_harness import RenderWorkflows
+
+
+BOOT_ID = str(uuid.uuid4())  # unique per worker process: disambiguates instance sharing
 
 
 class Deps(TypedDict):
@@ -62,7 +66,7 @@ runtime = RenderWorkflows[Deps](
 async def whoami(ctx: RunContext[Deps]) -> dict[str, object]:
     """Return process/host evidence and add a usage marker (tests effects transfer)."""
     ctx.usage.incr(RunUsage(details={'hosted_effect_marker': 1}))
-    return {'pid': os.getpid(), 'host': socket.gethostname(), 'marker': ctx.deps['marker']}
+    return {'pid': os.getpid(), 'host': socket.gethostname(), 'boot_id': BOOT_ID, 'marker': ctx.deps['marker']}
 
 
 @tools.tool
@@ -98,6 +102,7 @@ async def hosted_run(ctx: TaskContext, prompt: str, deps: Deps) -> dict[str, obj
         'effect_marker': result.usage.details.get('hosted_effect_marker', 0),
         'entry_pid': os.getpid(),
         'entry_host': socket.gethostname(),
+        'entry_boot_id': BOOT_ID,
         'marker': deps['marker'],
     }
 
