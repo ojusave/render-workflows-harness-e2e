@@ -1,0 +1,1 @@
+pydantic-ai-harness[render] @ git+https://github.com/ojusave/pydantic-ai-harness-render-workflows@render-workflows-integration
